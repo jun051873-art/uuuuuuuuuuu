@@ -1239,4 +1239,41 @@ function skinDialog(){
  if($('#skin-restore'))$('#skin-restore').onclick=async()=>{try{await saveDeviceLook(original.previousLook);closeDialog();}catch(e){$('#dialog-error').textContent=e.message;}};
 }
 actions['skin-picker']=skinDialog;
+</script><script>
+/* Aether calendar swipe 1.0: local navigation only, no data writes. */
+(()=>{
+ if(window.AetherCalendarSwipe)return;window.AetherCalendarSwipe='1.0';
+ const style=document.createElement('style');style.textContent='.calendar-grid{touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain}';document.head.append(style);
+ let gesture=null,blockClickUntil=0;
+ const reset=()=>{gesture=null;};
+ document.addEventListener('pointerdown',e=>{
+  blockClickUntil=0;
+  if(gesture){reset();return;}
+  const grid=e.target.closest('.calendar-grid');
+  if(!grid||document.body.dataset.view!=='calendar'||!document.querySelector('#modal')?.hidden||!e.isPrimary||e.button!==0||e.clientX<20||e.clientX>innerWidth-20)return;
+  gesture={id:e.pointerId,x:e.clientX,y:e.clientY,at:performance.now(),grid,horizontal:false};
+ },true);
+ document.addEventListener('pointermove',e=>{
+  const g=gesture;if(!g||g.id!==e.pointerId)return;
+  const x=e.clientX-g.x,y=e.clientY-g.y;
+  if(!g.horizontal&&Math.abs(y)>12&&Math.abs(y)>Math.abs(x)){reset();return;}
+  if(!g.horizontal&&Math.abs(x)>14&&Math.abs(x)>Math.abs(y)*1.6){g.horizontal=true;try{g.grid.setPointerCapture(e.pointerId);}catch(_){}}
+  if(g.horizontal){if(e.cancelable)e.preventDefault();blockClickUntil=performance.now()+600;}
+ },{passive:false});
+ document.addEventListener('pointerup',e=>{
+  const g=gesture;if(!g||g.id!==e.pointerId)return;reset();
+  const dx=e.clientX-g.x,dy=e.clientY-g.y;
+  if(!g.horizontal||Math.abs(dx)<Math.max(48,Math.min(90,g.grid.clientWidth*.13))||Math.abs(dx)<Math.abs(dy)*1.6||performance.now()-g.at>500||!document.querySelector('#modal')?.hidden)return;
+  blockClickUntil=performance.now()+600;
+  const button=document.querySelector('[data-action="month-'+(dx<0?'next':'prev')+'"]');
+  // Invoke existing navigation, retaining year rollover and all date logic.
+  if(button){const until=blockClickUntil;blockClickUntil=0;button.click();blockClickUntil=until;
+   const grid=document.querySelector('.calendar-grid');if(grid&&!matchMedia('(prefers-reduced-motion: reduce)').matches)grid.animate([{opacity:.65,transform:'translateX('+(dx<0?12:-12)+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:150,easing:'ease-out'});
+  }
+ },true);
+ document.addEventListener('click',e=>{if(performance.now()<blockClickUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
+ document.addEventListener('pointercancel',reset,true);window.addEventListener('blur',reset);
+ document.addEventListener('visibilitychange',reset);
+})();
+
 </script></body></html>
