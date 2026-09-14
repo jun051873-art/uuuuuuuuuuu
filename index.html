@@ -1240,36 +1240,55 @@ function skinDialog(){
 }
 actions['skin-picker']=skinDialog;
 </script><script>
-/* Aether calendar swipe 1.0: local navigation only, no data writes. */
+/* Aether calendar swipe 2.0: local navigation only, no data writes. */
 (()=>{
- if(window.AetherCalendarSwipe)return;window.AetherCalendarSwipe='1.0';
- const style=document.createElement('style');style.textContent='.calendar-grid{touch-action:pan-y pinch-zoom;overscroll-behavior-x:contain}';document.head.append(style);
- let gesture=null,blockClickUntil=0;
- const reset=()=>{gesture=null;};
- document.addEventListener('pointerdown',e=>{
-  blockClickUntil=0;
-  if(gesture){reset();return;}
-  const grid=e.target.closest('.calendar-grid');
-  if(!grid||document.body.dataset.view!=='calendar'||!document.querySelector('#modal')?.hidden||!e.isPrimary||e.button!==0||e.clientX<20||e.clientX>innerWidth-20)return;
-  gesture={id:e.pointerId,x:e.clientX,y:e.clientY,at:performance.now(),grid,horizontal:false};
- },true);
- document.addEventListener('pointermove',e=>{
-  const g=gesture;if(!g||g.id!==e.pointerId)return;
-  const x=e.clientX-g.x,y=e.clientY-g.y;
-  if(!g.horizontal&&Math.abs(y)>12&&Math.abs(y)>Math.abs(x)){reset();return;}
-  if(!g.horizontal&&Math.abs(x)>14&&Math.abs(x)>Math.abs(y)*1.6){g.horizontal=true;try{g.grid.setPointerCapture(e.pointerId);}catch(_){}}
-  if(g.horizontal){if(e.cancelable)e.preventDefault();blockClickUntil=performance.now()+600;}
- },{passive:false});
+ if(window.AetherCalendarSwipe)return;window.AetherCalendarSwipe='2.0';
+ const style=document.createElement('style');style.textContent=`
+body[data-view="calendar"] #content{position:relative;display:flex;flex-direction:column;overflow:hidden;padding:calc(var(--header-height,70px) + 8px) 14px calc(100px + env(safe-area-inset-bottom))!important;min-height:0;overscroll-behavior:none;}
+body[data-view="calendar"] #content>.toolbar{flex:none;margin:0 0 6px;gap:4px;}
+body[data-view="calendar"] #content>.toolbar>h1{display:none;}
+body[data-view="calendar"] .calendar-date-tools{width:100%;display:flex;flex-wrap:nowrap;gap:6px!important;}
+body[data-view="calendar"] .calendar-date-tools>button{min-width:44px;min-height:44px;height:44px;padding:4px 8px;font-size:16px;white-space:nowrap;}
+body[data-view="calendar"] .calendar-date-tools .month-tap{flex:1;min-width:0;min-height:44px;height:44px;padding:2px 4px;}
+body[data-view="calendar"] .date-one-line{font-size:clamp(16px,2.5vw,24px)!important;white-space:nowrap;}
+body[data-view="calendar"] .calendar-header{flex:none;padding:3px 0 6px;}
+body[data-view="calendar"] .calendar-grid{touch-action:pinch-zoom;overscroll-behavior:contain;flex:1;min-height:0;grid-template-rows:repeat(var(--month-rows,6),minmax(0,1fr));overflow:hidden;will-change:transform;}
+body[data-view="calendar"] .cal-day{min-height:0;height:100%;padding:4px!important;gap:2px;overflow:hidden;border-radius:10px!important;}
+body[data-view="calendar"] .cal-top{min-height:20px;flex-shrink:0;}
+body[data-view="calendar"] .cal-top strong{font-size:clamp(16px,2vw,24px);}
+body[data-view="calendar"] .dots{flex-wrap:nowrap;overflow:hidden;min-height:0;flex-shrink:0;}
+body[data-view="calendar"] .lunar:empty{display:none;}
+body[data-view="calendar"] .day-note{flex-shrink:0;padding:1px 3px!important;line-height:1.2;}
+body[data-view="calendar"] #content>p.hint{display:none;}
+@media(max-height:700px){body[data-view="calendar"] .header{min-height:0;padding:8px 14px;}body[data-view="calendar"] .header .glow-title{font-size:22px;}body[data-view="calendar"] .lunar{display:none;}body[data-view="calendar"] .dots{display:none;}body[data-view="calendar"] .nav{height:58px;bottom:calc(6px + env(safe-area-inset-bottom));}body[data-view="calendar"] #content{padding-bottom:calc(70px + env(safe-area-inset-bottom))!important;}}
+@media(max-height:450px){body[data-view="calendar"] #content{padding-top:4px!important;}body[data-view="calendar"] .header{display:none;}body[data-view="calendar"] .calendar-header{padding:0;font-size:11px;}body[data-view="calendar"] .cal-count{font-size:9px;line-height:10px;}body[data-view="calendar"] .cal-top{min-height:15px;}body[data-view="calendar"] .cal-top strong{font-size:14px;}}
+`;document.head.append(style);
+ const fit=()=>{const grid=document.querySelector('.calendar-grid');if(grid)grid.style.setProperty('--month-rows',Math.ceil(grid.children.length/7));};new MutationObserver(fit).observe(document.querySelector('#content'),{childList:true});fit();
+ const monthCells=month=>{
+ const [y,m]=month.split('-').map(Number),offset=(new Date(y,m-1,1).getDay()+6)%7,count=new Date(y,m,0).getDate();
+ let cells='<div class="cal-blank"></div>'.repeat(offset);
+ for(let n=1;n<=count;n++){const date=month+'-'+String(n).padStart(2,'0'),note=state.data.days[date],apts=R('appointments').filter(a=>a.date===date&&Core.active(a));const styles=[...new Set(apts.map(a=>a.styId))];
+ cells+=`<button class="cal-day ${date===Core.today()?'today-highlight':''} ${note?.off?'off-day':''}" data-action="day" data-id="${date}" style="--off:${Core.color(state.data.settings.main.offColor)}"><div class="cal-top"><strong>${n}</strong>${date===Core.today()?'<small>今</small>':note?.off?'<small>休</small>':''}</div><span class="lunar">${lunarHint(date)}</span><div class="cal-count">${apts.length?apts.length+' 筆':'&nbsp;'}</div><div class="dots">${styles.map(id=>`<span title="${E(nameOf('stylists',id))}" style="background:${Core.color(state.data.stylists[id]?.color)}">${E(nameOf('stylists',id).slice(-1))}</span>`).join('')}</div>${note?.note?`<div class="day-note" style="background:${Core.color(note.color)};color:${memoInk(note.color)};border-color:${Core.color(note.color)}">${E(note.note)}</div>`:''}</button>`;}
+return cells;};
+ let gesture=null,blockClickUntil=0,settling=false;
+ const cleanup=g=>{g?.neighbors?.forEach(n=>n.remove());if(g?.grid){g.grid.style.transform='';g.grid.style.transition='';}};
+ const reset=()=>{cleanup(gesture);gesture=null;};
+ const prepare=g=>{const value=document.querySelector('#month-picker').value,[y,m]=value.split('-').map(Number),box=g.grid.getBoundingClientRect(),parent=document.querySelector('#content'),pb=parent.getBoundingClientRect();g.width=box.width;g.neighbors=[-1,1].map(dir=>{const d=new Date(y,m-1+dir,1),key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'),n=g.grid.cloneNode(false);n.classList.add('swipe-neighbor');n.innerHTML=monthCells(key);n.inert=true;n.setAttribute('aria-hidden','true');n.style.cssText='position:absolute;pointer-events:none;top:'+(box.top-pb.top)+'px;left:'+(box.left-pb.left)+'px;width:'+box.width+'px;height:'+box.height+'px;flex:none;transition:none;';n.style.setProperty('--month-rows',Math.ceil(n.children.length/7));n.dataset.dir=dir;parent.append(n);return n;});};
+ const move=(g,dx)=>{g.grid.style.transform='translate3d('+dx+'px,0,0)';g.neighbors.forEach(n=>n.style.transform='translate3d('+(dx+Number(n.dataset.dir)*g.width)+'px,0,0)');};
+ document.addEventListener('pointerdown',e=>{if(settling)return;blockClickUntil=0;if(gesture){reset();return;}const grid=e.target.closest('.calendar-grid');if(!grid||document.body.dataset.view!=='calendar'||!document.querySelector('#modal')?.hidden||!e.isPrimary||e.button!==0||e.clientX<20||e.clientX>innerWidth-20)return;gesture={id:e.pointerId,x:e.clientX,y:e.clientY,at:performance.now(),grid,horizontal:false};},true);
+ document.addEventListener('pointermove',e=>{const g=gesture;if(!g||g.id!==e.pointerId)return;const x=e.clientX-g.x,y=e.clientY-g.y;if(!g.horizontal&&Math.abs(y)>12&&Math.abs(y)>Math.abs(x)){reset();return;}if(!g.horizontal&&Math.abs(x)>12&&Math.abs(x)>Math.abs(y)*1.4){g.horizontal=true;prepare(g);try{g.grid.setPointerCapture(e.pointerId);}catch(_){}}if(g.horizontal){move(g,x);if(e.cancelable)e.preventDefault();blockClickUntil=performance.now()+600;}},{passive:false});
  document.addEventListener('pointerup',e=>{
-  const g=gesture;if(!g||g.id!==e.pointerId)return;reset();
-  const dx=e.clientX-g.x,dy=e.clientY-g.y;
-  if(!g.horizontal||Math.abs(dx)<Math.max(48,Math.min(90,g.grid.clientWidth*.13))||Math.abs(dx)<Math.abs(dy)*1.6||performance.now()-g.at>500||!document.querySelector('#modal')?.hidden)return;
-  blockClickUntil=performance.now()+600;
-  const button=document.querySelector('[data-action="month-'+(dx<0?'next':'prev')+'"]');
-  // Invoke existing navigation, retaining year rollover and all date logic.
-  if(button){const until=blockClickUntil;blockClickUntil=0;button.click();blockClickUntil=until;
-   const grid=document.querySelector('.calendar-grid');if(grid&&!matchMedia('(prefers-reduced-motion: reduce)').matches)grid.animate([{opacity:.65,transform:'translateX('+(dx<0?12:-12)+'px)'},{opacity:1,transform:'translateX(0)'}],{duration:150,easing:'ease-out'});
-  }
+  const g=gesture;if(!g||g.id!==e.pointerId)return;gesture=null;
+  if(!g.horizontal){cleanup(g);return;}
+  const dx=e.clientX-g.x,dy=e.clientY-g.y,speed=Math.abs(dx)/Math.max(1,performance.now()-g.at);
+  const change=(Math.abs(dx)>g.width*.2||(Math.abs(dx)>40&&speed>.35))&&Math.abs(dx)>Math.abs(dy)*1.4&&document.querySelector('#modal')?.hidden;
+  const target=change?(dx<0?-g.width:g.width):0;
+  blockClickUntil=performance.now()+500;settling=true;
+  const duration=matchMedia('(prefers-reduced-motion: reduce)').matches?0:Math.min(260,Math.max(120,Math.abs(target-dx)/(speed+.8)));
+  const items=[g.grid,...g.neighbors];const animations=items.map((n,i)=>{const offset=i?Number(n.dataset.dir)*g.width:0;return n.animate([{transform:'translate3d('+(dx+offset)+'px,0,0)'},{transform:'translate3d('+(target+offset)+'px,0,0)'}],{duration,easing:'cubic-bezier(.22,.75,.25,1)',fill:'forwards'});});
+  Promise.all(animations.map(a=>a.finished.catch(()=>{}))).then(()=>{animations.forEach(a=>a.cancel());cleanup(g);settling=false;
+   if(change&&document.body.dataset.view==='calendar'){blockClickUntil=0;document.querySelector('[data-action="month-'+(dx<0?'next':'prev')+'"]')?.click();blockClickUntil=performance.now()+100;}
+  });
  },true);
  document.addEventListener('click',e=>{if(performance.now()<blockClickUntil){e.preventDefault();e.stopImmediatePropagation();}},true);
  document.addEventListener('pointercancel',reset,true);window.addEventListener('blur',reset);
