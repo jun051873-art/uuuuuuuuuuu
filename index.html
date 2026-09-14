@@ -217,6 +217,19 @@ body[data-view=clients] .cli-luxe-card{padding:22px;border-radius:30px;}
 body[data-view=clients] .cli-luxe-card strong{font-size:1.65rem;}
 body[data-view=clients] .card-actions button{min-height:44px;font-size:14px;padding:8px 12px;}
 }
+</style><style id="aether-frosted-glass">/* Frosted surfaces retain the skin tint while revealing scrolling content. */
+.header,.nav{
+ background:rgba(255,255,255,.58)!important;
+ background:linear-gradient(125deg,rgba(255,255,255,.58),color-mix(in srgb,var(--skin-header,#fff8e7) 28%,transparent) 55%,rgba(255,255,255,.36))!important;
+ -webkit-backdrop-filter:blur(18px) saturate(145%);
+ backdrop-filter:blur(18px) saturate(145%);
+ border-color:rgba(255,255,255,.65)!important;
+ box-shadow:0 8px 28px rgba(40,49,47,.08),inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(255,255,255,.18);
+}
+.nav{box-shadow:0 10px 32px rgba(40,49,47,.13),inset 0 1px 1px rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.25)}
+.nav .nav-item.active{background:rgba(255,255,255,.3)!important;background:linear-gradient(135deg,color-mix(in srgb,var(--tab-color,#ad8836) 19%,transparent),rgba(255,255,255,.24))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 8px rgba(40,49,47,.04)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.header,.nav{background:var(--skin-surface,#fafaf8)!important}}
+@media(prefers-reduced-transparency:reduce){.header,.nav{background:var(--skin-surface,#fafaf8)!important;-webkit-backdrop-filter:none;backdrop-filter:none}.nav .nav-item.active{background:color-mix(in srgb,var(--tab-color,#ad8836) 18%,white)!important}}
 </style></head><body>
 <header class="header"><div class="glow-title" id="brand">我的專屬空間</div><div id="header-center"></div><div class="header-right"><button id="sync-status" class="sync-status" data-action="connect">本機模式</button></div></header><button id="new-booking" class="primary" data-action="new-booking" aria-label="新增預約" title="新增預約"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5v22M5 16h22"/></svg></button>
 <div id="lock-notice" hidden>帳號權限待驗證，請重新連線。</div><main id="content" class="content-scroll"><div class="empty">正在讀取本機資料…</div></main>
