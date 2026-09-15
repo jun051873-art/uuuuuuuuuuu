@@ -659,12 +659,12 @@ function openDialog(title,html,submit,label='儲存'){
 }
 function closeDialog(){if(dialogCleanup)dialogCleanup();dialogCleanup=null;$('#modal').hidden=true;document.body.classList.remove('modal-open');$('#dialog-form').onsubmit=null;}
 function requireAdmin(){if(!isAdmin())throw Error('此操作僅限店長');}
-function checkWritable(){if(cloud?.expiresAt&&Date.now()>=cloud.expiresAt){locked=true;render();throw Error('帳號授權已到期，請管理員更新');}if(locked)throw Error('帳號權限尚未驗證，暫時無法操作');if(cloud?.role==='staff'&&!navigator.onLine)throw Error('員工模式需連線驗證權限');}
+function checkWritable(){if(cloud?.refreshing)throw Error('正在核對最新資料，完成後即可編輯');if(cloud?.expiresAt&&Date.now()>=cloud.expiresAt){locked=true;render();throw Error('帳號授權已到期，請管理員更新');}if(locked)throw Error('帳號權限尚未驗證，暫時無法操作');if(cloud?.role==='staff'&&!navigator.onLine)throw Error('員工模式需連線驗證權限');}
 function storageOpen(){return new Promise((resolve,reject)=>{const req=indexedDB.open('aether-booking-319',1);req.onupgradeneeded=()=>req.result.createObjectStore('states');req.onerror=()=>reject(Error('無法開啟本機儲存；請使用一般瀏覽模式'));req.onsuccess=()=>resolve(req.result);});}
 function atomic(fn,key=storageKey){return new Promise((resolve,reject)=>{const tx=idb.transaction('states','readwrite'),obj=tx.objectStore('states');let result;const req=obj.get(key);req.onsuccess=()=>{try{const s=req.result||initial();result=fn(s)||s;obj.put(result,key);}catch(e){tx.abort();reject(e);}};tx.oncomplete=()=>{if(key===storageKey)state=result;resolve(result);};tx.onerror=()=>reject(Error('本機保存失敗，可能是空間不足；請先匯出備份'));tx.onabort=()=>reject(Error('本機保存未完成'));});}
 const channel=typeof BroadcastChannel==='function'?new BroadcastChannel('aether-319'):null;
 channel?.addEventListener('message',async e=>{if(e.data===storageKey){await atomic(s=>s);render();}});
-function pendingStatus(){if(locked)return '權限待驗證';if(syncError)return '尚未同步 · 點此核對';if(!cloud)return '本機模式 · 請定期備份';if(!navigator.onLine)return '離線 · '+state.queue.length+' 筆待同步';if(state.conflicts.length)return '有 '+state.conflicts.length+' 筆衝突待核對';if(state.queue.length)return '已存本機 · '+state.queue.length+' 筆待同步';return state.lastSync?(cloud.type==='legacy'?'原雲端已同步 ':'已同步 ')+new Date(state.lastSync).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'連線中';}
+function pendingStatus(){if(locked)return '權限待驗證';if(cloud?.refreshing)return '已顯示本機資料 · 更新中';if(syncError)return '尚未同步 · 點此核對';if(!cloud)return '本機模式 · 請定期備份';if(!navigator.onLine)return '離線 · '+state.queue.length+' 筆待同步';if(state.conflicts.length)return '有 '+state.conflicts.length+' 筆衝突待核對';if(state.queue.length)return '已存本機 · '+state.queue.length+' 筆待同步';return state.lastSync?(cloud.type==='legacy'?'原雲端已同步 ':'已同步 ')+new Date(state.lastSync).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'連線中';}
 async function commit(change,label='資料已保存',flags={}){
  checkWritable();if(cloud?.role==='staff'){try{await verifyMembership(cloud.db,cloud.salon,cloud.uid);}catch(e){locked=true;syncError=cloudError(e);render();throw Error(syncError);}}await atomic(s=>{
   const before=Core.clone(s.data),draft=Core.clone(s.data);change(draft);Core.validateDB(draft);const changes=Core.diff(before,draft);if(!changes.length)return s;
@@ -821,7 +821,7 @@ function renderStats(){
  for(const key of ['from','to'])$('#stats-'+key).onchange=e=>{const v=e.target.value;if(!Core.dateOK(v))return;const f=key==='from'?v:statsFrom,t=key==='to'?v:statsTo;if(f>t){toast('起始日期不能晚於結束日期',true);renderStats();return;}statsFrom=f;statsTo=t;renderStats();};$('#stats-sty').onchange=e=>{statsSty=e.target.value;renderStats();};
 }
 function renderSettings(){
- const s=state.data.settings.main;$('#content').innerHTML=`<div class="toolbar"><h1>設定</h1><span class="version">AETHER 319.39</span></div><div class="settings-list">${isAdmin()?'<button class="set-drawer-trigger" data-action="skin-picker"><span>一鍵換膚<small>奶油珍珠・草莓牛奶・薄荷小屋・紫藤信箋</small></span><b>試穿風格 ›</b></button>':''}${isAdmin()?'<button class="set-drawer-trigger" data-action="revisit-settings"><span>顧客回訪<small>週期、關心訊息與提醒間隔</small></span><b>›</b></button>':''}${isAdmin()?'<button class="set-drawer-trigger" data-action="holidays"><span>休假與排休<small>整店、設計師、多日與固定星期</small></span><b>›</b></button>':''}${isAdmin()?`<button class="set-drawer-trigger" data-action="status-settings"><span>預約狀態標籤<small>新增、改名、配色與移除</small></span><b>›</b></button><button class="set-drawer-trigger" data-action="appearance"><span>外觀與使用習慣<small>淡漸層、配色、圓角與過路客預設</small></span><b>♡</b></button><button class="set-drawer-trigger" data-action="tag-colors"><span>標籤名稱與配色<small>常用標籤集中管理</small></span><b>›</b></button><button class="set-drawer-trigger" data-action="brand"><span>品牌與營業時間<small>店名、時間間隔、排休色彩</small></span><b>${E(s.start)}–${E(s.end)} ›</b></button>${[['stylists','人員與代表色'],['services','服務項目與時長'],['methods','付款方式與顏色']].map(([k,n])=>`<button class="set-drawer-trigger" data-action="manage" data-id="${k}"><span>${n}<small>新增、編輯、停用與恢復</small></span><b>${R(k).filter(x=>x.active).length} 項 ›</b></button>`).join('')}<button class="set-drawer-trigger" data-action="attributes"><span>顧客屬性與標籤<small>自訂選項、保留舊紀錄</small></span><b>›</b></button>`:''}<button class="set-drawer-trigger" data-action="data-center"><span>資料與雲端<small>備份還原、連線、同步與版本資訊</small></span><b>›</b></button></div>`;organizeSettings();
+ const s=state.data.settings.main;$('#content').innerHTML=`<div class="toolbar"><h1>設定</h1><span class="version">AETHER 319.40</span></div><div class="settings-list">${isAdmin()?'<button class="set-drawer-trigger" data-action="skin-picker"><span>一鍵換膚<small>奶油珍珠・草莓牛奶・薄荷小屋・紫藤信箋</small></span><b>試穿風格 ›</b></button>':''}${isAdmin()?'<button class="set-drawer-trigger" data-action="revisit-settings"><span>顧客回訪<small>週期、關心訊息與提醒間隔</small></span><b>›</b></button>':''}${isAdmin()?'<button class="set-drawer-trigger" data-action="holidays"><span>休假與排休<small>整店、設計師、多日與固定星期</small></span><b>›</b></button>':''}${isAdmin()?`<button class="set-drawer-trigger" data-action="status-settings"><span>預約狀態標籤<small>新增、改名、配色與移除</small></span><b>›</b></button><button class="set-drawer-trigger" data-action="appearance"><span>外觀與使用習慣<small>淡漸層、配色、圓角與過路客預設</small></span><b>♡</b></button><button class="set-drawer-trigger" data-action="tag-colors"><span>標籤名稱與配色<small>常用標籤集中管理</small></span><b>›</b></button><button class="set-drawer-trigger" data-action="brand"><span>品牌與營業時間<small>店名、時間間隔、排休色彩</small></span><b>${E(s.start)}–${E(s.end)} ›</b></button>${[['stylists','人員與代表色'],['services','服務項目與時長'],['methods','付款方式與顏色']].map(([k,n])=>`<button class="set-drawer-trigger" data-action="manage" data-id="${k}"><span>${n}<small>新增、編輯、停用與恢復</small></span><b>${R(k).filter(x=>x.active).length} 項 ›</b></button>`).join('')}<button class="set-drawer-trigger" data-action="attributes"><span>顧客屬性與標籤<small>自訂選項、保留舊紀錄</small></span><b>›</b></button>`:''}<button class="set-drawer-trigger" data-action="data-center"><span>資料與雲端<small>備份還原、連線、同步與版本資訊</small></span><b>›</b></button></div>`;organizeSettings();
 }
 function migrateDeviceSettings(s){if(!s.localSettings37){if(s.queue.some(op=>op.changes.some(ch=>ch.kind==='settings'&&Object.hasOwn(ch.fields,'appearance'))))detachAppearanceChanges(s);s.localSettings37=true;}return recheckSettingsConflicts(s);}
 function bookingDefaultsDialog(){requireAdmin();const base=Core.clone(state.data.settings.main.bookingDefaults||{}),v={duration:60,people:1,vip:false,phoneRequired:false,...base};openDialog('新預約預設・店內共用',`<p class="hint">同店裝置同步，新預約套用；既有預約與金額不會被改寫。</p>${field('預設服務時長（分鐘）',inp('duration',v.duration,'number','min="5" max="720" required'))}${field('預設來店人數',inp('people',v.people,'number','min="1" max="50" required'))}<label class="check"><input type="checkbox" name="vip" ${v.vip?'checked':''}>預設為指定設計師</label><label class="check"><input type="checkbox" name="phoneRequired" ${v.phoneRequired?'checked':''}>新預約必須填電話</label>`,async fd=>{const next={duration:Number(fd.get('duration')),people:Number(fd.get('people')),vip:fd.has('vip'),phoneRequired:fd.has('phoneRequired')};await commit(d=>{const merged=Core.merge({id:'main',bookingDefaults:d.settings.main.bookingDefaults||{}},{kind:'settings',id:'main',base:{id:'main',bookingDefaults:base},fields:{bookingDefaults:next}});if(merged.conflicts.length)throw Error('同一項預設剛被更改，請重新核對');d.settings.main.bookingDefaults=merged.record.bookingDefaults;},'新預約預設已保存');});}
@@ -1139,12 +1139,39 @@ function watchKey(c){
  unsubs.push(c.db.doc('BookingKeyMembers/'+c.uid).onSnapshot(snap=>{if(cloud!==c||snap.metadata?.fromCache)return;const m=snap.exists?snap.data():{};if(m.active!==true||m.shop!==c.salon){locked=true;syncError='雲端鑰匙權限已停用，請聯絡管理者';render();}},e=>{if(cloud===c){locked=true;syncError=keyError(e);render();}}));
  unsubs.push(firebase.auth().onAuthStateChanged(user=>{if(cloud===c&&user?.uid!==c.uid){locked=true;syncError='登入已結束，請重新連線';render();}}));
 }
+let keyResumeTask=null;
 async function resumeKey(){
- const shop=sessionStorage.getItem('aether-key-shop')||localStorage.getItem('aether-remembered-key-shop');if(!shop)return;
- // Require a verified server session before showing saved shop data on a fresh page.
- try{if(!navigator.onLine)throw Error('請連線並輸入雲端鑰匙；上次的待同步資料仍保留');await loadFirebase();const user=await new Promise(resolve=>{let off=firebase.auth().onAuthStateChanged(u=>{setTimeout(()=>off(),0);resolve(u);});});if(!user)throw Error('請重新輸入雲端鑰匙');const c={type:'legacy',keyMode:true,remember:localStorage.getItem('aether-remembered-key-shop')===shop,salon:shop,uid:user.uid,email:'店號 '+shop,role:'admin',db:firebase.firestore()};await verifyKeyMember(c);const snap=await c.db.doc('Salons/'+shop).get({source:'server'});if(!snap.exists)throw Error('原雲端資料不存在，未建立新文件');const raw=snap.data();await retainRawBackup(raw,shop,legacyStorage(c));await activateLegacy(c,raw,LegacyBridge.decode(raw));}
- catch(e){sessionStorage.removeItem('aether-key-shop');toast(keyError(e),true);keyDialog();}
+ if(keyResumeTask)return keyResumeTask;
+ keyResumeTask=resumeKeyOnce();try{return await keyResumeTask;}finally{keyResumeTask=null;}
 }
+async function resumeKeyOnce(){
+ const shop=sessionStorage.getItem('aether-key-shop')||localStorage.getItem('aether-remembered-key-shop');if(!shop)return;
+ let c=null;
+ try{
+  if(!navigator.onLine)throw Error('請連線驗證帳號；上次的資料仍保留');
+  await loadFirebase();
+  const user=await new Promise(resolve=>{let off=firebase.auth().onAuthStateChanged(u=>{setTimeout(()=>off(),0);resolve(u);});});
+  if(!user)throw Error('請重新輸入雲端鑰匙');
+  c={type:'legacy',keyMode:true,remember:localStorage.getItem('aether-remembered-key-shop')===shop,salon:shop,uid:user.uid,email:'店號 '+shop,role:'admin',db:firebase.firestore()};
+  await verifyKeyMember(c);
+  const key=legacyStorage(c);
+  const cached=await new Promise((resolve,reject)=>{const r=idb.transaction('states','readonly').objectStore('states').get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
+  if(cached?.lastSync){
+   unsubs.forEach(f=>f());unsubs=[];cloud=c;storageKey=key;c.refreshing=true;locked=false;syncError='';
+   await atomic(migrateDeviceSettings);render();watchKey(c);
+  }
+  const snap=await c.db.doc('Salons/'+shop).get({source:'server'});
+  if(cached?.lastSync&&(cloud!==c||locked))return;
+  if(!snap.exists)throw Object.assign(Error('原雲端資料不存在，請核對店號'),{code:'permission-denied'});
+  const raw=snap.data();await retainRawBackup(raw,shop,key);
+  if(cached?.lastSync&&(cloud!==c||locked))return;
+  c.refreshing=false;await activateLegacy(c,raw,LegacyBridge.decode(raw));
+ }catch(e){
+  if(c&&cloud===c){c.refreshing=false;syncError=keyError(e);if(e.code==='permission-denied'){locked=true;closeDialog();}render();return;}
+  sessionStorage.removeItem('aether-key-shop');toast(keyError(e),true);keyDialog();
+ }
+}
+
 function changeKeyDialog(){
  if(!cloud?.keyMode)return;const c=cloud;
  openDialog('換一把雲端鑰匙',`${field('目前鑰匙',inp('old','','password','required autocomplete="current-password"'))}${field('新的鑰匙',inp('next','','password','required minlength="12" autocomplete="new-password"'))}${field('再次輸入新鑰匙',inp('confirm','','password','required minlength="12" autocomplete="new-password"'))}<p class="hint">新鑰匙至少 12 個字元。請妥善記下，下次登入使用新鑰匙。</p>`,async fd=>{if(fd.get('next')!==fd.get('confirm'))throw Error('兩次新鑰匙不相同');try{await verifyKeyMember(c);const u=firebase.auth().currentUser;await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email,String(fd.get('old'))));await u.updatePassword(String(fd.get('next')));toast('雲端鑰匙已更換');}catch(e){throw Error(keyError(e));}},'儲存新鑰匙');
@@ -1448,4 +1475,5 @@ return cells;};
 })();
 
 </script></body></html>
+
 
