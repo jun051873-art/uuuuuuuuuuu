@@ -25,8 +25,7 @@ async function post(p,rows,method,ack,linkedId=''){
  const result=plan(p,rows,method,staff,services,settings,tx,ack),r=receipt(p.id);
  if(result.exact){if(result.exact.sourceAppointment?.fingerprint!==comparable(p))throw Error('此預約已入帳且內容不同，請查原單，禁止重複新增');localStorage.setItem(receiptPrefix+p.id,JSON.stringify({status:'posted',orderId:result.exact.id,shop:settings.shopID}));return {status:'existing',orderId:result.exact.id,added:0};}
  if(r?.status==='posted')throw Error('此預約曾入帳，但原單目前不在本機。請先還原最新POS備份，不會自動重建');
- let next,orderId=p.id;
- if(linkedId){const target=tx.find(t=>t.id===linkedId);if(!target||target.sourceAppointment||!result.possible.some(x=>x.id===linkedId))throw Error('請重新核對原有單據');orderId=target.id;next=tx.map(t=>t.id===linkedId?{...t,sourceAppointment:result.order.sourceAppointment,bridgeShop:storeKey(settings)}:t);}else{if(result.possible.length)throw Error('有同日、同名、同金額的既有單據，請先選擇對應原單，避免重複入帳');next=[result.order,...tx];}
+ const orderId=p.id;if(result.possible.length)throw Error('有同日、同名、同金額的既有單據，請先選擇對應原單，避免重複入帳');const next=[result.order,...tx];
  // One authoritative order write. Receipt can be reconstructed from order metadata after a crash.
  localStorage.setItem(PREFIX+'last-pos-backup',JSON.stringify({at:new Date().toISOString(),transactions:tx}));
  localStorage.setItem('salon_transactions',JSON.stringify(next));
