@@ -5,7 +5,20 @@ async function packet(id){checkWritable();requireAdmin();const a=state.data.appo
 async function sendOne(id){const p=await packet(id);openDialog('傳送到美髮開單系統',`<p><b>${E(p.name)}</b> · ${E(p.date)} ${E(p.time)}<br>${E([...p.services.map(x=>x.name),...(p.products||[]).map(x=>x.name+' ×'+x.qty)].join('＋'))}<br>電話 ${E(p.customer?.phone||'未填')} · 生日 ${E(p.customer?.birthday||'未填')}<br>${E(p.stylist.name)} · 金額 $${F(p.amount)} · 已收 $${F(p.paid)}</p><p>傳到你自用的 pos222222「待核對預約」。核對項目與既有單據後才入帳，不會只因勾選完成就產生新單。</p><p class="hint">傳送成功後可關閉頁面。之後從原本的美髮開單網址登入本店，即可看到雲端待核對資料；確認入帳後仍請備份POS帳目。</p>`,async()=>{const fresh=await packet(id);if(B.comparable(fresh)!==B.comparable(p))throw Error('預約剛被修改，請重新開啟核對');const status=await window.AetherCloudInbox.send(fresh);setTimeout(()=>openDialog(status==='posted'?'此筆已入帳':status==='processing'?'此筆正在核對':'已存入雲端，等待核對',`<p>${status==='posted'?'不會重複建立單據。':'已存入本店雲端待核對區。可稍後自行打開原本的美髮開單系統核對，不需要從這裡跳轉。'}</p><a class="primary" href="${destination}" target="_blank" rel="noopener">打開美髮開單系統</a>`,null),0);},'確認傳送');}
 actions['send-pos']=id=>sendOne(id).catch(e=>toast(e.message,true));
 const oldQuick=quickCard;quickCard=function(a){const html=oldQuick(a);if(a.status!=='completed'||!isAdmin())return html;return html.replace('</article>',`<div class="booking-card-tools"><button type="button" data-action="send-pos" data-id="${E(a.id)}">傳送到美髮開單</button></div></article>`);};
-const oldSettings=renderSettings;renderSettings=function(){oldSettings();const list=document.querySelector('.settings-list');if(list&&isAdmin())list.insertAdjacentHTML('afterbegin','<button class="set-drawer-trigger" data-action="pos-day"><span>傳送指定日期到美髮開單<small>一天一天傳送，方便核對人數與金額</small></span><b>›</b></button><button class="set-drawer-trigger" data-action="pos-month"><span>傳送已完成預約到美髮開單<small>按月份核對；存入雲端待核對區；不會自動入帳</small></span><b>›</b></button>');};
+const oldSettings=renderSettings;
+renderSettings=function(){
+ oldSettings();const list=document.querySelector('.settings-list');if(!list)return;
+ const group=document.createElement('details');group.className='settings-category';group.id='booking-common-tools';
+ const summary=document.createElement('summary');summary.textContent='傳送與常用工具';group.append(summary);
+ if(isAdmin()){const transfer=document.createElement('button');transfer.type='button';transfer.className='set-drawer-trigger';transfer.dataset.action='pos-transfer';transfer.innerHTML='<span>傳送到美髮開單<small>選擇指定一天或整個月份，核對後再傳送</small></span><b>›</b>';group.append(transfer);}
+ for(const action of ['bio-settings','usage-guide','device-features']){const button=list.querySelector('[data-action="'+action+'"]');if(button){const parent=button.parentElement;group.append(button);if(parent!==list&&!parent.children.length)parent.remove();}}
+ if(group.children.length>1)list.prepend(group);
+};
+actions['pos-transfer']=()=>{
+ openDialog('傳送到美髮開單',`<p>傳送已完成預約到待核對區。先選範圍，再查看明細。</p><div class="form-grid">${field('傳送範圍','<select id="pos-transfer-range"><option value="day">指定一天</option><option value="month">整個月份</option></select>')}</div><button type="button" class="primary" id="pos-transfer-continue">選擇日期</button>`,null);
+ const range=document.querySelector('#pos-transfer-range'),button=document.querySelector('#pos-transfer-continue');range.onchange=()=>{button.textContent=range.value==='day'?'選擇日期':'選擇月份';};button.onclick=()=>transferRange(range.value);
+};
+
 function transferRange(mode){
  const day=mode==='day',label=day?'指定日期':'月份',name=day?'transferDate':'transferMonth';
  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Taipei'}).format(new Date());
@@ -27,3 +40,4 @@ function transferRange(mode){
 actions['pos-month']=()=>transferRange('month');
 actions['pos-day']=()=>transferRange('day');
 })();
+
