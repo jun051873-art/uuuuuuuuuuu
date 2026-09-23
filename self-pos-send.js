@@ -22,7 +22,7 @@ function transferRange(mode){
  for(const p of packets){try{const fresh=await packet(p.appointmentId);if(B.comparable(fresh)!==B.comparable(p))throw Error('內容已修改');const status=await window.AetherCloudInbox.send(fresh);if(status==='posted')posted++;else sent++;}catch(e){errors.push(p.name+'：'+e.message);}}
  setTimeout(()=>openDialog('傳送結果',`<p>${E(value)}：${sent} 筆送至待核對區；${posted} 筆先前已入帳。</p>${errors.map(x=>'<p>'+E(x)+'</p>').join('')}<p>也可以直接開啟原本的美髮開單網址，在「待核對預約」選擇相同日期。</p><a href="${target}" target="_blank" rel="noopener">${day?'核對 '+E(value)+' 的資料':'打開美髮開單，核對待入帳預約'}</a>`,null),0);
  },day?'確認傳送這一天':'確認傳送這個月份'),0);
- });
+ },'查看核對清單');
 }
 actions['pos-month']=()=>transferRange('month');
 actions['pos-day']=()=>transferRange('day');
