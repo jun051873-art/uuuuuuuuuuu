@@ -1287,7 +1287,7 @@ function statusTags(){return state.data.settings.main.statusTags||Object.entries
 function statusTag(id){return statusTags().find(t=>t.id===id)||{id,state:Core.states[id]?id:'booked',name:Core.states[id]||'已預約',color:'#b69543',active:true};}
 function appointmentTag(a){return statusTag(a.statusTagId||a.status);}
 actions['appointment-history']=id=>{const a=state.data.appointments[id];if(!a)return;if(a.clientId&&state.data.clients[a.clientId]&&!state.data.clients[a.clientId]._deleted)return clientHistory(a.clientId);openDialog('消費歷程',`<p>${E(a.name)}目前未連結顧客名冊，無法確定其他同名紀錄是否屬於同一人。</p><button type="button" data-action="appointment" data-id="${E(a.id)}">查看這次預約</button><button type="button" data-action="edit-appointment" data-id="${E(a.id)}">編輯預約與顧客連結</button>`,null);};
-function quickCard(a){const sty=state.data.stylists[a.styId],p=state.data.payments[a.id],t=appointmentTag(a);return `<article data-appointment-id="${E(a.id)}" class="apt-card refined-card ${a.status==='completed'?'completed':''} ${!Core.active(a)?'inactive':''}" style="--c:${Core.color(sty?.color)}"><div class="card-top"><span class="apt-time">${E(a.time)}</span><button type="button" class="status" style="border-color:${Core.color(t.color)};background:${Core.color(t.color)}18" data-action="quick-status" data-id="${E(a.id)}">${E(t.name)}${a.status==='completed'?' ↶':' ✓'}</button></div><button type="button" class="card-name-button" data-action="appointment" data-id="${E(a.id)}"><span class="apt-name">${E(a.name)}</span><small>${a.people} 人${a.legacyUnlinked?' · 未連結名冊':a.guest?' · 過路客':''}${a.vip?' · 指定':''}</small></button><button type="button" class="apt-services quick-surface" data-action="quick-services" data-id="${E(a.id)}"><span class="card-section-label">服務項目</span><span class="service-tags">${a.serviceIds.map(id=>`<span class="chip" style="border:1px solid ${Core.color(state.data.services[id]?.color)}">${E(nameOf('services',id))}</span>`).join(' ')||'＋ 選擇服務'}</span><span class="quick-pencil" aria-hidden="true">＋</span></button>${isAdmin()?`<div class="quick-payment"><button type="button" class="quick-surface payment-pick" data-action="quick-methods" data-id="${E(a.id)}">${(p?.methodIds||[]).map(id=>`<span class="chip" style="border:1px solid ${Core.color(state.data.methods[id]?.color)};background:${Core.color(state.data.methods[id]?.color)}12">${E(nameOf('methods',id))}</span>`).join(' ')||'＋ 付款方式'}</button><button type="button" class="price-pill" data-action="quick-amount" data-id="${E(a.id)}"><span class="card-section-label">服務金額</span><strong>$${F(p?.amount)}</strong><small>已收 $${F(p?.paid)}</small></button></div>`:''}${(state.data.clients[a.clientId]?.tags||[]).length?`<div class="appointment-client-tags chips">${state.data.clients[a.clientId].tags.map(t=>`<span class="chip" style="${tagStyle(t)}">${E(t)}</span>`).join('')}</div>`:''}<button type="button" class="quick-note" data-action="quick-note" data-id="${E(a.id)}">${E(a.note||'＋ 寫點備註…')}</button><div class="card-foot card-actions-four">${[
+function quickCard(a){const sty=state.data.stylists[a.styId],p=state.data.payments[a.id],t=appointmentTag(a);return `<article data-appointment-id="${E(a.id)}" class="apt-card refined-card ${a.status==='completed'?'completed':''} ${!Core.active(a)?'inactive':''}" style="--c:${Core.color(sty?.color)}"><div class="card-top"><span class="apt-time">${E(a.time)}</span><button type="button" class="status" style="border-color:${Core.color(t.color)};background:${Core.color(t.color)}18" data-action="quick-status" data-id="${E(a.id)}">${E(t.name)}${a.status==='completed'?' ↶':' ✓'}</button></div><button type="button" class="card-name-button" data-action="appointment" data-id="${E(a.id)}"><span class="apt-name">${E(a.name)}</span><small>${a.people} 人${a.legacyUnlinked?' · 未連結名冊':a.guest?' · 過路客':''}${a.vip?' · 指定':''}</small></button><button type="button" class="apt-services quick-surface" data-action="quick-services" data-id="${E(a.id)}"><span class="service-tags">${a.serviceIds.map(id=>`<span class="chip" style="border:1px solid ${Core.color(state.data.services[id]?.color)}">${E(nameOf('services',id))}</span>`).join(' ')||'＋ 選擇服務'}</span><span class="quick-pencil" aria-hidden="true">＋</span></button>${isAdmin()?`<div class="quick-payment"><button type="button" class="quick-surface payment-pick" data-action="quick-methods" data-id="${E(a.id)}"><span class="payment-label">${(p?.methodIds||[]).map(id=>E(nameOf('methods',id))).join('／')||'＋ 付款方式'}</span></button><button type="button" class="price-pill" data-action="quick-amount" data-id="${E(a.id)}"><strong>$${F(p?.amount)}</strong><small>已收 $${F(p?.paid)}</small></button></div>`:''}${(state.data.clients[a.clientId]?.tags||[]).length?`<div class="appointment-client-tags chips">${state.data.clients[a.clientId].tags.map(t=>`<span class="chip" style="${tagStyle(t)}">${E(t)}</span>`).join('')}</div>`:''}<button type="button" class="quick-note" data-action="quick-note" data-id="${E(a.id)}">${E(a.note||'＋ 寫點備註…')}</button><div class="card-foot card-actions-four">${[
  ['edit-appointment','編輯預約','<path d="m16 3 5 5-12 12-6 1 1-6Z"/><path d="m14 5 5 5"/>'],
  ['quick-time','修改時間','<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'],
  ['appointment-history','消費歷程','<path d="M3 11a9 9 0 1 1 2 7M3 4v7h7"/><path d="M12 7v5l3 2"/>'],
@@ -1629,17 +1629,47 @@ body[data-view=day] .refined-card .card-round-action{display:flex;flex-direction
 body[data-view=day] .refined-card .card-action-disc{display:grid;place-items:center;width:46px;height:46px;flex:none;border:1px solid #d7dfda;border-radius:50%;background:rgba(255,255,255,.75);transition:transform 140ms ease,background-color 140ms ease}
 body[data-view=day] .refined-card .card-action-disc svg{width:19px;height:19px}.refined-card .card-action-caption{font-size:10px!important;font-weight:650;white-space:nowrap}
 body[data-view=day] .refined-card .card-action-danger{color:#a16b6b}.refined-card .card-action-danger .card-action-disc{border-color:#e6d6d4;background:#fff8f7}
-body[data-view=day] .refined-card .card-round-action:active .card-action-disc{transform:scale(.94);background:#eef3ef}
+body[data-view=day] .refined-card .card-round-action:active .card-action-disc{transform:none;background:#eef3ef}
 body[data-view=day] .refined-card .status{font-size:12px!important;min-height:34px!important;padding:6px 10px!important}
 body[data-view=day] .refined-card .apt-time{font-size:15px!important}
 body[data-view=day] .refined-card.completed{opacity:1!important;background:var(--completed-card,#f0f2ef)!important}
 button,a,summary{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-button{transition:background-color 140ms ease,border-color 140ms ease,transform 140ms ease}
+button{transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease}
 .lane-container,.content-scroll,#dialog-body{scroll-behavior:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-#modal:not([hidden]) .dialog{animation:card-dialog-enter 160ms cubic-bezier(.2,.7,.3,1)!important}
+#modal:not([hidden]) .dialog{animation:none!important}
 @keyframes card-dialog-enter{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){button,.card-action-disc{transition:none!important}#modal:not([hidden]) .dialog{animation:none!important}}
+</style><style id="candy-pill-cards">/* Restore the soft capsule layout; feedback fills the actual button. */
+body[data-view=day] .apt-card.refined-card{border-radius:38px!important;padding:22px!important}
+body[data-view=day] .refined-card .apt-services.quick-surface{min-height:66px!important;padding:15px 32px 15px 17px!important;border-radius:32px!important;flex-direction:row;align-items:center;background:#faf5ed!important;border-left:4px solid var(--gold,#d4af37)!important}
+body[data-view=day] .refined-card .service-tags .chip{border-radius:999px!important;padding:5px 10px!important;background:#fffaf0!important}
+body[data-view=day] .refined-card .quick-pencil{top:50%;transform:translateY(-50%);right:14px}
+body[data-view=day] .refined-card .retail-summary{border-radius:28px!important;min-height:44px!important;background:#fbf5ee!important;padding:11px 16px!important;border-left:4px solid var(--gold,#d4af37)!important}
+body[data-view=day] .refined-card .quick-payment{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:10px;margin:13px 0!important;align-items:center}
+body[data-view=day] .refined-card .payment-pick{display:flex;align-items:center;justify-content:center;min-height:56px!important;padding:12px 15px!important;border-radius:999px!important;background:#fff3f8!important;border-color:#ebdbe5!important;font-size:16px!important;font-weight:800!important;text-align:center}
+body[data-view=day] .refined-card .payment-label{font-size:inherit;font-weight:inherit;line-height:1.45;overflow-wrap:anywhere}
+body[data-view=day] .refined-card .price-pill{min-height:68px!important;padding:10px 16px!important;border-radius:999px!important;background:#fff6e2!important;border-color:#eadbb4!important;text-align:center}
+body[data-view=day] .refined-card .price-pill strong{font-size:24px!important;margin:0;line-height:1.2}
+body[data-view=day] .refined-card .price-pill small{font-size:12px!important;margin-top:4px}
+body[data-view=day] .refined-card .quick-note{border-radius:999px!important;padding:12px 16px!important;background:#f9f5fc!important}
+body[data-view=day] .refined-card .card-actions-four{gap:6px!important;border-top:1px dashed #dedbd6!important;padding-top:13px!important}
+body[data-view=day] .refined-card .card-round-action{--pill-fill:#c3e3d6;display:flex;align-items:center;justify-content:center;min-height:44px!important;padding:10px 4px!important;border-radius:999px!important;border:1px solid #c9ded4!important;background:#e9f5ef!important;color:#345749!important;gap:0;transition:background-color 130ms ease,border-color 130ms ease!important}
+body[data-view=day] .refined-card .card-round-action:nth-child(2){--pill-fill:#cdddf5;background:#edf3fc!important;border-color:#d4dfed!important;color:#48617f!important}
+body[data-view=day] .refined-card .card-round-action:nth-child(3){--pill-fill:#e0cdf0;background:#f5edfc!important;border-color:#e4d6ec!important;color:#72558b!important}
+body[data-view=day] .refined-card .card-round-action:nth-child(4){--pill-fill:#f0cbcf;background:#fff0f1!important;border-color:#eddbdc!important;color:#945c66!important}
+body[data-view=day] .refined-card .card-action-disc{display:none!important}
+body[data-view=day] .refined-card .card-action-caption{font-size:11px!important;font-weight:800!important;white-space:nowrap;line-height:1.4}
+/* No translated/scaled button, SVG morph, focus pulse or circular splash. */
+body button:active,body button:active svg,body button:focus svg{transform:none!important;animation:none!important}
+body[data-view=day] .refined-card button:active{background:var(--pill-fill,#d4e8de)!important;border-color:#9cbaad!important;transform:none!important;animation:none!important}
+body[data-view=day] .refined-card button:active .chip{background:transparent!important}
+body[data-view=day] .refined-card button:focus:not(:focus-visible){outline:none!important}
+body[data-view=day] .refined-card button{animation:none!important;-webkit-tap-highlight-color:transparent}
+.quick-choice input:checked+span{background:color-mix(in srgb,var(--pick) 40%,white)!important;color:#1d1d1f;box-shadow:none!important}
+.quick-choice input:checked+span:before{content:none!important}
+@media(max-width:380px){body[data-view=day] .apt-card.refined-card{padding:17px!important}.refined-card .card-action-caption{font-size:10px!important}}
 </style></body></html>
+
 
 
 
