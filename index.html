@@ -529,7 +529,7 @@ function render(){
  const el=$('#content'),scroll=el.scrollTop,left=$('#lanes')?.scrollLeft||0;
  renderGlassHeader();
  if(locked){el.innerHTML=`<div class="empty"><h2>雲端連線需要處理</h2><p>${E(syncError||'請重新驗證登入權限')}</p><p>畫面暫時鎖定不表示資料被刪除；本機待同步內容仍保留。</p><button data-action="connect">重新驗證</button>${isAdmin()?'<button data-action="export">備份目前資料</button>':''}</div>`;return;}
- if(page==='calendar')renderCalendar();if(page==='day')renderDay();if(page==='clients')renderClients();if(page==='stats')renderStats();if(page==='settings')renderSettings();
+ if(page==='calendar')renderCalendar();if(page==='day')renderDay();if(page==='clients')renderClients();if(page==='stats')renderStats();if(page==='settings')renderSettings();if(page==='pending')renderPending();
  if(syncError)el.insertAdjacentHTML('afterbegin',`<div class="notice" role="alert"><b>尚未完成雲端同步</b><p>${E(syncError)}</p><button data-action="data-center">查看同步與備份</button></div>`);el.scrollTop=scroll;if($('#lanes'))$('#lanes').scrollLeft=left;
 }
 function lunarHint(date){try{const parts=new Intl.DateTimeFormat('zh-TW-u-ca-chinese',{day:'numeric'}).formatToParts(new Date(date+'T12:00:00'));const n=Number(parts.find(x=>x.type==='day')?.value);return ({1:'初一',2:'初二',15:'十五',16:'十六'})[n]||'';}catch{return '';}}
@@ -1298,7 +1298,7 @@ function quickEdit(id,kind){checkWritable();const a=state.data.appointments[id];
  if(kind==='status'){openDialog('點一下切換狀態',`<div class="quick-choices">${statusTags().filter(t=>t.active||t.id===appointmentTag(a).id).map(t=>`<button type="button" data-quick-state="${E(t.id)}" style="border-color:${Core.color(t.color)};background:${Core.color(t.color)}18" ${t.id===appointmentTag(a).id?'disabled':''}>${E(t.name)}</button>`).join('')}</div>`,null);$('#dialog-body').querySelectorAll('[data-quick-state]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const t=statusTag(b.dataset.quickState);await patchQuick(id,'appointments',a,{status:t.state,statusTagId:t.id},'狀態已更新');closeDialog();}catch(e){$('#dialog-error').textContent=e.message;b.disabled=false;}});return;}
  if(kind==='note'){openDialog('快速備註',`${field(a.name,`<textarea name="note" maxlength="2000" autofocus placeholder="例如：瀏海留長、頭皮較敏感…">${E(a.note)}</textarea>`)}`,async fd=>patchQuick(id,'appointments',a,{note:fd.get('note').trim()},'備註已保存'));return;}
  if(kind==='amount'){openDialog('快速金額',`<div class="form-grid">${field('服務金額',inp('amount',p.amount,'number','required min="0" step="0.01"'))}${field('已收金額',inp('paid',p.paid,'number','required min="0" step="0.01"'))}</div><button type="button" id="paid-full">已全額收款</button>`,async fd=>patchQuick(id,'payments',p,{amount:Number(fd.get('amount')),paid:Number(fd.get('paid'))},'金額已保存'));$('#paid-full').onclick=()=>{$('#dialog-form').elements.paid.value=$('#dialog-form').elements.amount.value;};return;}
- const services=kind==='services',key=services?'serviceIds':'methodIds',record=services?a:p,defs=R(services?'services':'methods').filter(t=>t.active||record[key].includes(t.id));openDialog(services?'快速選服務':'快速選付款方式',`<div class="quick-choices">${defs.map(t=>`<label class="quick-choice"><input type="checkbox" name="choice" value="${E(t.id)}" ${record[key].includes(t.id)?'checked':''}><span style="--pick:${Core.color(t.color)}">${E(t.name)}</span></label>`).join('')||'<p class="hint">請先在設定新增項目</p>'}</div>${services?'<p class="hint">只更新服務項目，預約開始時間保持不變。</p>':'<p class="hint">可複選；選擇付款方式不會自動標記已收款。</p>'}`,async fd=>patchQuick(id,services?'appointments':'payments',record,{[key]:fd.getAll('choice')},services?'服務已更新':'付款方式已更新'));
+ const services=kind==='services',key=services?'serviceIds':'methodIds',record=services?a:p,defs=R(services?'services':'methods').filter(t=>t.active||record[key].includes(t.id));openDialog(services?'快速選服務':'快速選付款方式',`<div class="quick-choices">${defs.map(t=>`<label class="quick-choice"><input type="checkbox" name="choice" value="${E(t.id)}" ${record[key].includes(t.id)?'checked':''}><span style="--pick:${Core.color(t.color)};--pick-ink:${memoInk(t.color)}">${E(t.name)}</span></label>`).join('')||'<p class="hint">請先在設定新增項目</p>'}</div>${services?'<p class="hint">只更新服務項目，預約開始時間保持不變。</p>':'<p class="hint">可複選；選擇付款方式不會自動標記已收款。</p>'}`,async fd=>patchQuick(id,services?'appointments':'payments',record,{[key]:fd.getAll('choice')},services?'服務已更新':'付款方式已更新'));
 }
 function statusSettings(){requireAdmin();const tags=statusTags();openDialog('預約狀態標籤',`<div class="manage-list">${tags.filter(t=>t.active).map(t=>`<div class="manage-row"><span class="color-dot" style="background:${Core.color(t.color)}"></span><span class="grow">${E(t.name)}<small>${E(Core.states[t.state])}類</small></span><button type="button" data-action="edit-status-tag" data-id="${E(t.id)}">編輯</button><button type="button" data-action="remove-status-tag" data-id="${E(t.id)}">刪除</button></div>`).join('')}</div><button type="button" data-action="edit-status-tag">＋ 新增狀態</button><details class="panel"><summary>已移除的標籤</summary>${tags.filter(t=>!t.active).map(t=>`<div class="manage-row"><span class="grow">${E(t.name)}</span><button type="button" data-action="restore-status-tag" data-id="${E(t.id)}">恢復</button></div>`).join('')||'<p class="hint">目前沒有</p>'}</details><p class="hint">移除後不再供新選擇，舊紀錄仍保留。用途決定是否佔用時段、是否計入完成營收。</p>`,null);}
 function editStatusTag(id=''){requireAdmin();const base=Core.clone(state.data.settings.main),tags=Core.clone(statusTags()),old=tags.find(t=>t.id===id);openDialog(old?'修改狀態標籤':'新增狀態標籤',`${field('標籤名稱',inp('name',old?.name||'','text','required maxlength="40"'))}${field('標籤顏色',inp('color',old?.color||'#a886c4','color'))}${field('用途',`<select name="meaning" ${old?'disabled':''}>${Object.entries(Core.states).map(([key,name])=>`<option value="${key}" ${key===(old?.state||'booked')?'selected':''}>${name}${key==='completed'?' · 計入完成營收':['cancelled','no_show'].includes(key)?' · 不佔時段':' · 佔用時段'}</option>`).join('')}</select>`)}<p class="hint">例如「等待沖水」選服務中；「已結束」選已完成。既有標籤的用途固定，名稱與顏色可修改。</p>`,async fd=>{const name=fd.get('name').trim();if(tags.some(t=>t.id!==id&&t.active&&t.name===name))throw Error('已有同名標籤');const rec={id:old?.id||Core.uid(),name,color:fd.get('color'),state:old?.state||fd.get('meaning'),active:true};await commit(d=>{const live=d.settings.main.statusTags||tags;if(old&&!Core.eq(live.find(t=>t.id===id),old))throw Error('這個標籤已被修改，請重新開啟核對');if(live.some(t=>t.id!==id&&t.active&&t.name===name))throw Error('已有同名標籤');d.settings.main.statusTags=old?live.map(t=>t.id===id?rec:t):[...live,rec];},'狀態標籤已保存');setTimeout(statusSettings,0);});}
@@ -1606,33 +1606,33 @@ function usageGuide(){
 actions['usage-guide']=usageGuide;
 const guideTimer=setInterval(()=>{if(localStorage.getItem('aether-guide-seen-v1')){clearInterval(guideTimer);return;}if(idb&&!locked&&$('#modal').hidden&&!document.querySelector('#local-gate')){clearInterval(guideTimer);usageGuide();}},1500);
 </script><script src="self-pos-core.js?v=20260922b"></script><script src="self-pos-send.js?v=20260923-standalone"></script><script src="self-retail.js?v=20260923-cards4"></script><style>/* Compact hierarchy for appointment cards, retaining the selected skin. */
-body[data-view=day] .apt-card.refined-card{padding:20px!important;border-radius:30px!important;border-left-width:5px!important;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 8px 24px #283d3510!important;overflow:hidden}
-body[data-view=day] .refined-card .card-name-button{margin:8px 0 16px!important;padding:0!important;min-height:50px;background:transparent!important;border:0!important;border-radius:0!important}
-body[data-view=day] .refined-card .apt-name{font-size:26px!important;line-height:1.3!important;margin:0 0 5px!important}
-body[data-view=day] .refined-card .card-name-button small{font-size:13px!important;font-weight:600!important;color:var(--muted)!important}
-body[data-view=day] .refined-card .apt-services.quick-surface{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:104px!important;padding:15px 30px 15px 15px!important;margin:0!important;border:1px solid #d8dfda!important;border-radius:20px!important;background:rgba(255,255,255,.62)!important;box-shadow:none!important}
-body[data-view=day] .refined-card .card-section-label{display:block;font-size:11px!important;line-height:1.4;font-weight:700;letter-spacing:1px;color:var(--muted)}
-body[data-view=day] .refined-card .service-tags{display:flex;gap:7px;flex-wrap:wrap;align-items:center;font-size:16px;font-weight:750;line-height:1.55}
-body[data-view=day] .refined-card .service-tags .chip{font-size:15px!important;padding:5px 9px!important;border-radius:11px!important;background:rgba(255,255,255,.75)!important;font-weight:750!important;line-height:1.4}
-body[data-view=day] .refined-card .quick-pencil{right:12px;top:14px;font-size:19px}
-body[data-view=day] .refined-card .retail-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;width:100%;min-height:44px!important;margin:8px 0 0;padding:10px 13px!important;border:1px solid #dfe4df!important;border-radius:15px!important;background:rgba(255,255,255,.3)!important;font-size:13px!important;font-weight:650;line-height:1.5;text-align:left}
-body[data-view=day] .refined-card .retail-summary small{font-size:11px;font-weight:600}.refined-card .retail-summary>span{overflow-wrap:anywhere}
-body[data-view=day] .refined-card .quick-payment{display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px;margin:14px 0!important;align-items:stretch}
-body[data-view=day] .refined-card .payment-pick{padding:11px!important;border-radius:18px!important;font-size:13px!important;min-width:0!important;min-height:84px!important;background:rgba(255,255,255,.55)!important;border:1px solid #e2e3e3!important}
-body[data-view=day] .refined-card .payment-pick .chip{font-size:12px!important;padding:4px 7px!important;white-space:normal}
-body[data-view=day] .refined-card .price-pill{padding:12px!important;border-radius:18px!important;min-width:0!important;text-align:right;min-height:84px!important;background:color-mix(in srgb,var(--user-accent,#947019) 9%,white)!important;border:1px solid color-mix(in srgb,var(--user-accent,#947019) 22%,white)!important}
-body[data-view=day] .refined-card .price-pill strong{display:block;font-size:27px!important;line-height:1.25;font-weight:850;letter-spacing:-.7px;margin-top:3px;overflow-wrap:anywhere}
-body[data-view=day] .refined-card .price-pill small{font-size:11px!important;margin-top:4px;font-weight:600}
-body[data-view=day] .refined-card .quick-note{min-height:44px!important;padding:10px 12px!important;font-size:12px!important;border-radius:14px!important;background:transparent!important;border:1px dashed #d8d9d9!important}
-body[data-view=day] .refined-card .card-actions-four{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px!important;padding:14px 0 0!important;margin-top:14px!important;border-top:1px solid #dedfdd!important}
-body[data-view=day] .refined-card .card-round-action{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;width:100%;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--user-text,#364b43);font-size:10px!important;line-height:1.3}
-body[data-view=day] .refined-card .card-action-disc{display:grid;place-items:center;width:46px;height:46px;flex:none;border:1px solid #d7dfda;border-radius:50%;background:rgba(255,255,255,.75);transition:transform 140ms ease,background-color 140ms ease}
-body[data-view=day] .refined-card .card-action-disc svg{width:19px;height:19px}.refined-card .card-action-caption{font-size:10px!important;font-weight:650;white-space:nowrap}
-body[data-view=day] .refined-card .card-action-danger{color:#a16b6b}.refined-card .card-action-danger .card-action-disc{border-color:#e6d6d4;background:#fff8f7}
-body[data-view=day] .refined-card .card-round-action:active .card-action-disc{transform:none;background:#eef3ef}
-body[data-view=day] .refined-card .status{font-size:12px!important;min-height:34px!important;padding:6px 10px!important}
-body[data-view=day] .refined-card .apt-time{font-size:15px!important}
-body[data-view=day] .refined-card.completed{opacity:1!important;background:var(--completed-card,#f0f2ef)!important}
+body:is([data-view=day],[data-view=pending]) .apt-card.refined-card{padding:20px!important;border-radius:30px!important;border-left-width:5px!important;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:0 8px 24px #283d3510!important;overflow:hidden}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-name-button{margin:8px 0 16px!important;padding:0!important;min-height:50px;background:transparent!important;border:0!important;border-radius:0!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .apt-name{font-size:26px!important;line-height:1.3!important;margin:0 0 5px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-name-button small{font-size:13px!important;font-weight:600!important;color:var(--muted)!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .apt-services.quick-surface{display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-height:104px!important;padding:15px 30px 15px 15px!important;margin:0!important;border:1px solid #d8dfda!important;border-radius:20px!important;background:rgba(255,255,255,.62)!important;box-shadow:none!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-section-label{display:block;font-size:11px!important;line-height:1.4;font-weight:700;letter-spacing:1px;color:var(--muted)}
+body:is([data-view=day],[data-view=pending]) .refined-card .service-tags{display:flex;gap:7px;flex-wrap:wrap;align-items:center;font-size:16px;font-weight:750;line-height:1.55}
+body:is([data-view=day],[data-view=pending]) .refined-card .service-tags .chip{font-size:15px!important;padding:5px 9px!important;border-radius:11px!important;background:rgba(255,255,255,.75)!important;font-weight:750!important;line-height:1.4}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-pencil{right:12px;top:14px;font-size:19px}
+body:is([data-view=day],[data-view=pending]) .refined-card .retail-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;width:100%;min-height:44px!important;margin:8px 0 0;padding:10px 13px!important;border:1px solid #dfe4df!important;border-radius:15px!important;background:rgba(255,255,255,.3)!important;font-size:13px!important;font-weight:650;line-height:1.5;text-align:left}
+body:is([data-view=day],[data-view=pending]) .refined-card .retail-summary small{font-size:11px;font-weight:600}.refined-card .retail-summary>span{overflow-wrap:anywhere}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-payment{display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:10px;margin:14px 0!important;align-items:stretch}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick{padding:11px!important;border-radius:18px!important;font-size:13px!important;min-width:0!important;min-height:84px!important;background:rgba(255,255,255,.55)!important;border:1px solid #e2e3e3!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick .chip{font-size:12px!important;padding:4px 7px!important;white-space:normal}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill{padding:12px!important;border-radius:18px!important;min-width:0!important;text-align:right;min-height:84px!important;background:color-mix(in srgb,var(--user-accent,#947019) 9%,white)!important;border:1px solid color-mix(in srgb,var(--user-accent,#947019) 22%,white)!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill strong{display:block;font-size:27px!important;line-height:1.25;font-weight:850;letter-spacing:-.7px;margin-top:3px;overflow-wrap:anywhere}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill small{font-size:11px!important;margin-top:4px;font-weight:600}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-note{min-height:44px!important;padding:10px 12px!important;font-size:12px!important;border-radius:14px!important;background:transparent!important;border:1px dashed #d8d9d9!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-actions-four{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px!important;padding:14px 0 0!important;margin-top:14px!important;border-top:1px solid #dedfdd!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;width:100%;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:var(--user-text,#364b43);font-size:10px!important;line-height:1.3}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-action-disc{display:grid;place-items:center;width:46px;height:46px;flex:none;border:1px solid #d7dfda;border-radius:50%;background:rgba(255,255,255,.75);transition:transform 140ms ease,background-color 140ms ease}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-action-disc svg{width:19px;height:19px}.refined-card .card-action-caption{font-size:10px!important;font-weight:650;white-space:nowrap}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-action-danger{color:#a16b6b}.refined-card .card-action-danger .card-action-disc{border-color:#e6d6d4;background:#fff8f7}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action:active .card-action-disc{transform:none;background:#eef3ef}
+body:is([data-view=day],[data-view=pending]) .refined-card .status{font-size:12px!important;min-height:34px!important;padding:6px 10px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .apt-time{font-size:15px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card.completed{opacity:1!important;background:var(--completed-card,#f0f2ef)!important}
 button,a,summary{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 button{transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease}
 .lane-container,.content-scroll,#dialog-body{scroll-behavior:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
@@ -1640,42 +1640,54 @@ button{transition:background-color 140ms ease,border-color 140ms ease,color 140m
 @keyframes card-dialog-enter{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){button,.card-action-disc{transition:none!important}#modal:not([hidden]) .dialog{animation:none!important}}
 </style><style id="candy-pill-cards">/* Restore the soft capsule layout; feedback fills the actual button. */
-body[data-view=day] .apt-card.refined-card{border-radius:38px!important;padding:22px!important}
-body[data-view=day] .refined-card .apt-services.quick-surface{min-height:66px!important;padding:15px 32px 15px 17px!important;border-radius:32px!important;flex-direction:row;align-items:center;background:#faf5ed!important;border-left:4px solid var(--gold,#d4af37)!important}
-body[data-view=day] .refined-card .service-tags .chip{border-radius:999px!important;padding:5px 10px!important;background:#fffaf0!important}
-body[data-view=day] .refined-card .quick-pencil{top:50%;transform:translateY(-50%);right:14px}
-body[data-view=day] .refined-card .retail-summary{border-radius:28px!important;min-height:44px!important;background:#fbf5ee!important;padding:11px 16px!important;border-left:4px solid var(--gold,#d4af37)!important}
-body[data-view=day] .refined-card .quick-payment{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:10px;margin:13px 0!important;align-items:center}
-body[data-view=day] .refined-card .payment-pick{display:flex;align-items:center;justify-content:center;min-height:56px!important;padding:12px 15px!important;border-radius:999px!important;background:#fff3f8!important;border-color:#ebdbe5!important;font-size:16px!important;font-weight:800!important;text-align:center}
-body[data-view=day] .refined-card .payment-label{font-size:inherit;font-weight:inherit;line-height:1.45;overflow-wrap:anywhere}
-body[data-view=day] .refined-card .price-pill{min-height:68px!important;padding:10px 16px!important;border-radius:999px!important;background:#fff6e2!important;border-color:#eadbb4!important;text-align:center}
-body[data-view=day] .refined-card .price-pill strong{font-size:24px!important;margin:0;line-height:1.2}
-body[data-view=day] .refined-card .price-pill small{font-size:12px!important;margin-top:4px}
-body[data-view=day] .refined-card .quick-note{border-radius:999px!important;padding:12px 16px!important;background:#f9f5fc!important}
-body[data-view=day] .refined-card .card-actions-four{gap:6px!important;border-top:1px dashed #dedbd6!important;padding-top:13px!important}
-body[data-view=day] .refined-card .card-round-action{--pill-fill:#c3e3d6;display:flex;align-items:center;justify-content:center;min-height:44px!important;padding:10px 4px!important;border-radius:999px!important;border:1px solid #c9ded4!important;background:#e9f5ef!important;color:#345749!important;gap:0;transition:background-color 130ms ease,border-color 130ms ease!important}
-body[data-view=day] .refined-card .card-round-action:nth-child(2){--pill-fill:#cdddf5;background:#edf3fc!important;border-color:#d4dfed!important;color:#48617f!important}
-body[data-view=day] .refined-card .card-round-action:nth-child(3){--pill-fill:#e0cdf0;background:#f5edfc!important;border-color:#e4d6ec!important;color:#72558b!important}
-body[data-view=day] .refined-card .card-round-action:nth-child(4){--pill-fill:#f0cbcf;background:#fff0f1!important;border-color:#eddbdc!important;color:#945c66!important}
-body[data-view=day] .refined-card .card-action-disc{display:none!important}
-body[data-view=day] .refined-card .card-action-caption{font-size:11px!important;font-weight:800!important;white-space:nowrap;line-height:1.4}
+body:is([data-view=day],[data-view=pending]) .apt-card.refined-card{border-radius:38px!important;padding:22px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .apt-services.quick-surface{min-height:66px!important;padding:15px 32px 15px 17px!important;border-radius:32px!important;flex-direction:row;align-items:center;background:#faf5ed!important;border-left:4px solid var(--gold,#d4af37)!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .service-tags .chip{border-radius:999px!important;padding:5px 10px!important;background:#fffaf0!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-pencil{top:50%;transform:translateY(-50%);right:14px}
+body:is([data-view=day],[data-view=pending]) .refined-card .retail-summary{border-radius:28px!important;min-height:44px!important;background:#fbf5ee!important;padding:11px 16px!important;border-left:4px solid var(--gold,#d4af37)!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-payment{grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);gap:10px;margin:13px 0!important;align-items:center}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick{display:flex;align-items:center;justify-content:center;min-height:56px!important;padding:12px 15px!important;border-radius:999px!important;background:#fff3f8!important;border-color:#ebdbe5!important;font-size:16px!important;font-weight:800!important;text-align:center}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-label{font-size:inherit;font-weight:inherit;line-height:1.45;overflow-wrap:anywhere}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill{min-height:68px!important;padding:10px 16px!important;border-radius:999px!important;background:#fff6e2!important;border-color:#eadbb4!important;text-align:center}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill strong{font-size:24px!important;margin:0;line-height:1.2}
+body:is([data-view=day],[data-view=pending]) .refined-card .price-pill small{font-size:12px!important;margin-top:4px}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-note{border-radius:999px!important;padding:12px 16px!important;background:#f9f5fc!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-actions-four{gap:6px!important;border-top:1px dashed #dedbd6!important;padding-top:13px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action{--pill-fill:#c3e3d6;display:flex;align-items:center;justify-content:center;min-height:44px!important;padding:10px 4px!important;border-radius:999px!important;border:1px solid #c9ded4!important;background:#e9f5ef!important;color:#345749!important;gap:0;transition:background-color 130ms ease,border-color 130ms ease!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action:nth-child(2){--pill-fill:#cdddf5;background:#edf3fc!important;border-color:#d4dfed!important;color:#48617f!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action:nth-child(3){--pill-fill:#e0cdf0;background:#f5edfc!important;border-color:#e4d6ec!important;color:#72558b!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-round-action:nth-child(4){--pill-fill:#f0cbcf;background:#fff0f1!important;border-color:#eddbdc!important;color:#945c66!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-action-disc{display:none!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .card-action-caption{font-size:11px!important;font-weight:800!important;white-space:nowrap;line-height:1.4}
 /* No translated/scaled button, SVG morph, focus pulse or circular splash. */
 body button:active,body button:active svg,body button:focus svg{transform:none!important;animation:none!important}
-body[data-view=day] .refined-card button:active{background:var(--pill-fill,#d4e8de)!important;border-color:#9cbaad!important;transform:none!important;animation:none!important}
-body[data-view=day] .refined-card button:active .chip{background:transparent!important}
-body[data-view=day] .refined-card button:focus:not(:focus-visible){outline:none!important}
-body[data-view=day] .refined-card button{animation:none!important;-webkit-tap-highlight-color:transparent}
+body:is([data-view=day],[data-view=pending]) .refined-card button:active{background:var(--pill-fill,#d4e8de)!important;border-color:#9cbaad!important;transform:none!important;animation:none!important}
+body:is([data-view=day],[data-view=pending]) .refined-card button:active .chip{background:transparent!important}
+body:is([data-view=day],[data-view=pending]) .refined-card button:focus:not(:focus-visible){outline:none!important}
+body:is([data-view=day],[data-view=pending]) .refined-card button{animation:none!important;-webkit-tap-highlight-color:transparent}
 .quick-choice input:checked+span{background:color-mix(in srgb,var(--pick) 40%,white)!important;color:#1d1d1f;box-shadow:none!important}
 .quick-choice input:checked+span:before{content:none!important}
-@media(max-width:380px){body[data-view=day] .apt-card.refined-card{padding:17px!important}.refined-card .card-action-caption{font-size:10px!important}}
+@media(max-width:380px){body:is([data-view=day],[data-view=pending]) .apt-card.refined-card{padding:17px!important}.refined-card .card-action-caption{font-size:10px!important}}
 </style><style id="payment-color-pills">
-body[data-view=day] .refined-card .quick-payment{align-items:stretch}
-body[data-view=day] .refined-card .payment-pick{flex-wrap:wrap;gap:6px;align-content:center;justify-content:flex-start;min-height:68px!important;background:#fff3f8!important;border:1px solid #ebdbe5!important;padding:10px 12px!important}
-body[data-view=day] .refined-card .payment-pick .payment-color-tag{flex:0 0 auto;width:auto;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}
-body[data-view=day] .refined-card .payment-pick .payment-color-tag{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 16px!important;border:1px solid var(--payment-color)!important;background:color-mix(in srgb,var(--payment-color) 23%,white)!important;color:color-mix(in srgb,var(--payment-color) 45%,#18221d)!important;font-size:15px!important;font-weight:850!important;border-radius:999px!important}
-body[data-view=day] .refined-card .payment-pick:active .payment-color-tag{background:color-mix(in srgb,var(--payment-color) 45%,white)!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .quick-payment{align-items:stretch}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick{flex-wrap:wrap;gap:6px;align-content:center;justify-content:flex-start;min-height:68px!important;background:#fff3f8!important;border:1px solid #ebdbe5!important;padding:10px 12px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick .payment-color-tag{flex:0 0 auto;width:auto;max-width:100%;min-width:0;white-space:normal;overflow-wrap:anywhere}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick .payment-color-tag{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 16px!important;border:1px solid var(--payment-color)!important;background:color-mix(in srgb,var(--payment-color) 23%,white)!important;color:color-mix(in srgb,var(--payment-color) 45%,#18221d)!important;font-size:15px!important;font-weight:850!important;border-radius:999px!important}
+body:is([data-view=day],[data-view=pending]) .refined-card .payment-pick:active .payment-color-tag{background:color-mix(in srgb,var(--payment-color) 45%,white)!important}
 .lane-container{overscroll-behavior-y:auto!important;overscroll-behavior-x:contain}
-</style></body></html>
+</style><style id="pending-smooth-tags">
+body button,body .chip,body .check-chips span,body .quick-choice span{-webkit-tap-highlight-color:transparent;transition-property:background-color,color,border-color!important;transition-duration:140ms!important;transition-timing-function:ease-out!important}
+body button:active,body .chip:active,body .quick-choice:active,body .check-chips label:active{transform:none!important;animation:none!important}
+body .client-tag-choice,body .client-tag-choice[aria-pressed=true]{font-weight:800;box-shadow:none!important}
+body [aria-pressed],body .note-tag-library button,body .quick-choice span,body .check-chips span{animation:none!important}
+
+.pending-entry{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%;padding:22px 26px;margin-bottom:22px;background:linear-gradient(120deg,#fff9e9,#f3ebfa);border:1px solid #e4d9e9;border-radius:28px;text-align:left}.pending-entry strong{font-size:26px}.pending-entry span{font-size:16px}.pending-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:24px}.pending-cards h2{font-size:18px;margin:14px 0}.pending-tabs{display:flex;gap:12px;flex-wrap:wrap}.pending-tabs button[aria-pressed=true]{background:#e4d8f0;border-color:#a68aba}.pending-metric{text-align:left;width:100%}
+body .quick-choice,body .check-chips label{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body .quick-choice span,body .check-chips label span{transition:background-color 140ms ease-out,color 140ms ease-out!important;animation:none!important;transform:none!important;box-shadow:none!important;background-image:none!important}
+body .quick-choice input:checked+span,body .check-chips input:checked+span{background:var(--pick)!important;color:var(--pick-ink,#1d1d1f)!important;box-shadow:none!important}
+body .quick-choice input:checked+span:before,body .check-chips input:checked+span:before{content:none!important}
+@media(prefers-reduced-motion:reduce){body button,body .chip,body .quick-choice span,body .check-chips label span{transition:none!important}}
+</style><script src="self-pending.js?v=20260927-1"></script></body></html>
 
 
 
