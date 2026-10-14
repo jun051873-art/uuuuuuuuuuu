@@ -9,7 +9,7 @@ window.renderPending=function(){if(!isAdmin()&&pendingKind!=='unfinished')pendin
 actions['pending-open']=(_,button)=>{pendingMonth=button?.dataset.month||month;pendingSty=button?.dataset.sty||'';pendingKind=button?.dataset.kind||'unfinished';page='pending';render();$('#content').scrollTop=0;};
 actions['pending-kind']=kind=>{pendingKind=kind;renderPending();};
 const cal=renderCalendar;renderCalendar=function(){cal();$('#content').insertAdjacentHTML('afterbegin',entry(month,styFilter));};
-const day=renderDay;renderDay=function(){day();$('#content').insertAdjacentHTML('afterbegin',entry(selectedDate.slice(0,7),styFilter));};
+// The monthly pending entry is available on the calendar; keep the day view focused on today.
 const stats=renderStats;renderStats=function(){stats();if(!isAdmin())return;$('#content').insertAdjacentHTML('afterbegin',entry(statsFrom.slice(0,7),statsSty));const metric=[...document.querySelectorAll('.metric')].find(x=>x.querySelector('small')?.textContent==='已完成未收款');if(metric){const button=document.createElement('button');button.type='button';button.className='metric pending-metric';button.dataset.action='pending-open';button.dataset.month=statsFrom.slice(0,7);button.dataset.sty=statsSty;button.dataset.kind='service';button.innerHTML=metric.innerHTML+'<small>查看當月服務待收卡片 ›</small>';metric.replaceWith(button);}};
 window.AetherPending={selectRows,balance};
 })();
