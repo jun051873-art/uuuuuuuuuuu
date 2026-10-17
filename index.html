@@ -2283,7 +2283,7 @@ list.prepend(quick);return out;};
 @keyframes wx-field-glow{from{opacity:.6;transform:translateX(-5%)}to{opacity:1;transform:translateX(5%)}}
 .wx-preview{padding:14px 0}.wx-preview-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.wx-sample{position:relative;isolation:isolate;height:115px;border:1px solid #d7dbe2;border-radius:18px;overflow:hidden;background:#fafbfc;color:#303c4a!important}.wx-sample>b{position:relative;z-index:2;display:block;padding:12px;font-size:14px}.wx-preview p{font-size:12px;line-height:1.6;margin:9px 0;color:inherit}.wx-preview[hidden]{display:none!important}
 .wx-scene.wx-overcast .wx-orb{opacity:.18;filter:blur(7px)}.wx-scene[data-night=true]{background:radial-gradient(ellipse at 85% 16%,#aeb7d5aa,transparent 75%),linear-gradient(120deg,#eeedf400,#a2b2c788);color:#3f4c67}
-@media(prefers-reduced-motion:reduce){.wx-cell.wx-animate *{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.wx-cell.wx-animate :is(.wx-field-cloud,.wx-field-fall,.wx-field-light){animation:none!important}}
 html.wx-document-hidden .wx-cell *{animation-play-state:paused!important}
 </style>
 
