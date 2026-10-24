@@ -2820,7 +2820,7 @@ function decorate(){
  const keep=new Set([...direct,...cards]);
  document.querySelectorAll('.season-layer:not(.season-demo)').forEach(el=>{if(!keep.has(el.parentElement))el.remove();});
  direct.forEach(host=>ensureLayer(host,p,host.matches('.history-hero'),effect));
- const visible=new Set(),painted=new Set();let paintTimer=0;
+ const visible=new Set(),painted=new Set(cards.filter(card=>card.querySelector(':scope>.season-layer:not(.season-demo)')));let paintTimer=0;
  function paint(){clearTimeout(paintTimer);paintTimer=setTimeout(()=>{if(document.body.classList.contains('ui-priority')){paint();return;}if(cards.length&&!cards[0].isConnected)return;const active=[...visible].slice(0,2),next=new Set(active);painted.forEach(card=>{if(!next.has(card)){card.querySelector(':scope>.season-layer:not(.season-demo)')?.remove();painted.delete(card);}});active.forEach(card=>{ensureLayer(card,p,true,effect);painted.add(card);});},150);}
  if(cards.length&&'IntersectionObserver'in window){observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)visible.add(e.target);else visible.delete(e.target);});paint();},{root:modalOpen?$('#dialog-body'):$('#content'),threshold:0});cards.forEach(card=>observer.observe(card));}
  else cards.slice(0,2).forEach(card=>ensureLayer(card,p,true,effect));
