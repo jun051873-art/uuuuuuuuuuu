@@ -1843,8 +1843,8 @@ body #modal .dialog{animation:none!important;box-shadow:0 22px 65px #27201630,0 
  function navigate(button,commit){
   if(button.hidden||button.disabled||(!pending&&button.dataset.page===page))return;
   const ticket=++sequence,opacity=getComputedStyle(content).opacity;exit?.cancel();enter?.cancel();pending=button.dataset.page;select(button);
-  const run=()=>{if(ticket!==sequence)return;pending=null;try{commit();headerResize();content.getBoundingClientRect();exit?.cancel();exit=null;sync();if(!reduced.matches&&content.animate)enter=content.animate([{opacity:0},{opacity:1}],{duration:320,easing:'cubic-bezier(.25,.1,.25,1)'});}catch(error){exit?.cancel();sync();toast(error.message,true);}};
-  if(reduced.matches||!content.animate)run();else{exit=content.animate([{opacity},{opacity:0}],{duration:85,easing:'ease-in',fill:'forwards'});exit.finished.then(run,()=>{});}
+  const run=()=>{if(ticket!==sequence)return;pending=null;try{commit();headerResize();content.getBoundingClientRect();exit?.cancel();exit=null;sync();if(!reduced.matches&&content.animate)enter=content.animate([{opacity:0},{opacity:1}],{duration:140,easing:'cubic-bezier(.25,.1,.25,1)'});}catch(error){exit?.cancel();sync();toast(error.message,true);}};
+  run();
  }
  window.AetherLiquid={navigate,sync};
  const priorRender=render;render=function(){priorRender();headerResize();sync();};
