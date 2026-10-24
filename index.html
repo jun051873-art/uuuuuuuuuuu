@@ -3167,24 +3167,34 @@ body[data-view="settings"] .settings-list{margin-top:0}}
 @media(prefers-reduced-motion:reduce){.header,.glass-summary,.aether-header-note{transition:none!important}}
 </style><script id="aether-page-glass-unified-v32011">
 (()=>{'use strict';
-const oldHeader=renderGlassHeader;
-renderGlassHeader=function(){
- oldHeader();const center=document.querySelector('#header-center');if(!center||locked)return;
- const metric=(label,value)=>'<span class="glass-metric"><small>'+E(label)+'</small><strong>'+E(value)+'</strong></span>';
- if(page==='calendar'){const rows=R('appointments').filter(a=>a.date?.startsWith(month)&&Core.active(a));const pending=rows.filter(a=>a.status!=='completed').length;center.innerHTML='<div class="glass-summary aether-calendar-summary">'+metric('月曆期間',month.slice(0,4)+'年 '+Number(month.slice(5))+'月')+metric('有效預約',rows.length+' 筆')+metric('待完成',pending+' 筆')+'</div>';}
- else if(page==='clients'){const count=R('clients').filter(c=>cliArchive||c.active!==false).length;center.innerHTML='<div class="aether-header-note"><span><strong>顧客名冊</strong><small>'+count+' 位顧客 · 搜尋姓名或電話快速找到資料</small></span><button type="button" class="primary" data-action="new-client">＋ 新增顧客</button></div>';}
- else if(page==='settings'){center.innerHTML='<div class="aether-header-note"><span><strong>設定與管理</strong><small>外觀、營業、人員與資料設定</small></span><small class="version">AETHER 320.11</small></div>';}
- headerResize();
-};
-const oldRenderSettings=renderSettings;
-renderSettings=function(){oldRenderSettings();document.querySelectorAll('[data-action="special-settings"]').forEach(x=>x.remove());document.querySelectorAll('.version').forEach(x=>x.textContent='AETHER 320.11');};
-const previousPrefs=prefs;
-prefs=function(){const p=previousPrefs();return {...p,familiar:false,time:false,warm:false,discovery:false};};
-discovery=()=>{};
-try{document.documentElement.removeAttribute('data-time-glass');document.documentElement.style.removeProperty('--time-tint');}catch{}
-window.aetherTint=()=>{};
+const header=document.querySelector('.header'),center=document.querySelector('#header-center'),content=document.querySelector('#content');
+if(!header||!center||!content)return;
+const escape=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function refresh(){
+ const view=document.body.dataset.view;
+ if(view==='calendar'){
+  const month=document.querySelector('#month-picker')?.value||'';
+  const label=month?month.slice(0,4)+'年 '+Number(month.slice(5))+'月':'月曆';
+  center.innerHTML='<div class="aether-header-note"><span><strong>'+escape(label)+'</strong><small>點選日期查看預約 · 今日跑道與記錄查詢在下方</small></span></div>';
+ }else if(view==='clients'){
+  const count=document.querySelector('#client-result-count')?.textContent||'顧客名冊';
+  center.innerHTML='<div class="aether-header-note"><span><strong>顧客名冊</strong><small>'+escape(count)+' · 搜尋姓名或電話快速找到資料</small></span><button type="button" class="primary" data-action="new-client">＋ 新增顧客</button></div>';
+ }else if(view==='settings'){
+  center.innerHTML='<div class="aether-header-note"><span><strong>設定與管理</strong><small>外觀、營業、人員與資料設定</small></span><small class="version">AETHER 320.11</small></div>';
+ }else if(view!=='stats'&&view!=='day')center.innerHTML='';
+ const h=Math.ceil(header.getBoundingClientRect().height)+'px';document.documentElement.style.setProperty('--header-height',h);
+}
+const observer=new MutationObserver(()=>requestAnimationFrame(refresh));
+observer.observe(document.body,{attributes:true,attributeFilter:['data-view']});
+observer.observe(content,{childList:true,subtree:true});
+refresh();
+document.addEventListener('click',e=>{if(e.target.closest('[data-action="special-settings"]')){e.preventDefault();e.stopImmediatePropagation();}},true);
 })();
-</script></body></html>
+</script><style id="aether-remove-ineffective-options-v32011">
+#set-hidden-placeholder{display:none}
+[data-action="special-settings"],.familiar-time,.endday-glow,.month-whisper{display:none!important}
+:root[data-time-glass]{--time-tint:transparent!important}
+</style></body></html>
 
 
 
