@@ -3029,7 +3029,10 @@ html.motion-gesture-active .season-stage .season-layer,html.motion-gesture-activ
 #content .calendar-grid.season-card-host>.cal-day{position:relative!important;z-index:2!important;background-color:rgba(255,255,255,.88)!important}
 #content .calendar-grid.season-card-host>.cal-day.off-day{background-color:rgba(177,176,185,.86)!important}
 #content .calendar-grid.season-card-host>.cal-day>:not(.wx-cell){position:relative!important;z-index:4!important}
-#content .pending-entry.season-card-host>.season-layer{z-index:3!important;opacity:.42!important}
+#content .pending-entry.season-card-host>.season-layer{z-index:3!important;opacity:.5!important}
+#content .pending-entry.season-card-host>.season-layer[data-effect=rain] i:not(:nth-child(3n)){height:clamp(18px,5vh,36px)!important;opacity:.68!important}
+#content .pending-entry.season-card-host>.season-layer[data-effect=rain] i:nth-child(3n){width:clamp(12px,1.8vw,19px)!important;height:clamp(18px,3vh,28px)!important;opacity:1!important}
+#content .pending-entry.season-card-host>.season-layer[data-effect=rain] i:nth-child(3n):after{content:""!important;position:absolute!important;left:42%!important;top:-1.4em!important;width:2px!important;height:1.5em!important;border-radius:50%!important;background:linear-gradient(180deg,transparent,#dceefa80,#fff)!important;opacity:.72!important;filter:blur(.25px)!important}
 #content .pending-entry.season-card-host>:not(.season-layer){position:relative!important;z-index:4!important}
 #content .lane-container.season-card-host>.season-layer,#content .day-list.season-card-host>.season-layer{z-index:3!important;opacity:.3!important}
 #content .lane-container.season-card-host>:not(.season-layer),#content .day-list.season-card-host>:not(.season-layer){position:relative!important;z-index:2!important}
@@ -3086,7 +3089,7 @@ function sync(){clearTimeout(drawTimer);drawTimer=setTimeout(()=>{const p=prefs(
  const visible=el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth;};
  if(typeof page!=='undefined'&&page==='calendar'){
   if(p.calendar!==false){const grid=document.querySelector('#content .calendar-grid');if(grid)layer(grid,id,id==='rain'?8:6);}
-  if(p.pending!==false)document.querySelectorAll('#content .pending-entry').forEach(el=>{if(visible(el))layer(el,id,id==='rain'?12:9);});
+  if(p.pending!==false)document.querySelectorAll('#content .pending-entry').forEach(el=>{if(visible(el))layer(el,id,id==='rain'?18:9);});
  }
  if(typeof page!=='undefined'&&page==='day'&&p.today!==false){const runway=document.querySelector('#content .lane-container,#content .day-list');if(runway)layer(runway,id,id==='rain'?14:10);}
  if(p.bookingCards!==false){const add=document.querySelector('#new-booking');if(add&&!add.hidden&&getComputedStyle(add).display!=='none')layer(add,id,6);const title=document.querySelector('#dialog-title')?.textContent||'';if(title.includes('新增預約')){const dialog=document.querySelector('#modal .dialog');if(dialog)layer(dialog,id,id==='rain'?10:8);}}
