@@ -3016,7 +3016,8 @@ body[data-view=stats] .stats-period-card>.pending-entry span{font-size:13px!impo
   window.AetherHeaderDiscovery();
   headerResize();
  }
- const base=render;render=function(...args){const result=base(...args);arrange();return result;};
+ const statsDraw=renderStats;renderStats=function(...args){const result=statsDraw(...args);arrange();return result;};
+ const base=render;render=function(...args){const result=base(...args);if(page!=='stats')arrange();return result;};
  let pauseTimer;
  const pause=()=>{document.body.classList.add('whisper-paused');clearTimeout(pauseTimer);pauseTimer=setTimeout(()=>document.body.classList.remove('whisper-paused'),700);};
  document.addEventListener('pointerdown',pause,{passive:true});
