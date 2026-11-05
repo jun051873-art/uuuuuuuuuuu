@@ -1,0 +1,23 @@
+{
+  "name": "專屬空間｜店家預約表",
+  "short_name": "店家預約表",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8f6ef",
+  "theme_color": "#073b2a",
+  "icons": [
+    {
+      "src": "./assets/appointment-es-192.png?v=32024",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/appointment-es-512.png?v=32024",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
